@@ -1,0 +1,114 @@
+﻿@page "/movies/details/{id:int}"
+@rendermode InteractiveServer
+
+@using lab4_2.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<h3>Movie Details</h3>
+
+@if (movie != null)
+{
+    <div>
+        <h4>@movie.Title</h4>
+        <hr />
+        <dl class="row">
+            <dt class="col-sm-2">Description</dt>
+            <dd class="col-sm-10">@movie.Description</dd>
+
+            <dt class="col-sm-2">Release Date</dt>
+            <dd class="col-sm-10">@movie.ReleaseDate?.ToShortDateString()</dd>
+
+            <dt class="col-sm-2">Rating</dt>
+            <dd class="col-sm-10">@movie.Rate</dd>
+
+            @if (!string.IsNullOrEmpty(movie.ImageUrl))
+            {
+                <dt class="col-sm-2">Image</dt>
+                <dd class="col-sm-10">
+                    <img src="@movie.ImageUrl" alt="@movie.Title" style="max-width: 200px;" />
+                </dd>
+            }
+        </dl>
+
+        @if (!string.IsNullOrEmpty(movie.YouTubeTrailerId))
+        {
+            <div class="mt-4 mb-4">
+                <h5>Official Trailer</h5>
+                <div class="ratio ratio-16x9">
+                    <iframe src="https://www.youtube.com/embed/@movie.YouTubeTrailerId"
+                            title="@movie.Title trailer"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <small class="text-muted">
+                    <a href="https://youtu.be/@movie.YouTubeTrailerId" target="_blank">Watch on YouTube</a>
+                </small>
+            </div>
+        }
+        else
+        {
+            <div class="alert alert-info">
+                No trailer available for this movie
+            </div>
+        }
+
+        <AuthorizeView>
+            <Authorized>
+                <div class="form-group">
+                    <label for="newRating">Add your rating (1-10):</label>
+                    <input type="number" id="newRating" @bind="newRating" min="1" max="10" step="0.1" class="form-control" />
+                    <button @onclick="AddRating" class="btn btn-primary mt-2">Rate</button>
+                </div>
+            </Authorized>
+            <NotAuthorized>
+                <div class="alert alert-info">
+                    Please <a href="Identity/Account/Login">login</a> to rate this movie.
+                </div>
+            </NotAuthorized>
+        </AuthorizeView>
+    </div>
+}
+else
+{
+    <p>Movie not found.</p>
+}
+
+<div>
+    <a href="/movies" class="btn btn-secondary">Back to List</a>
+</div>
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Movie? movie;
+    private double newRating;
+
+    protected override async Task OnInitializedAsync()
+    {
+        movie = await Context.Movie.FirstOrDefaultAsync(m => m.Id == Id);
+    }
+
+    private async Task AddRating()
+    {
+        if (movie != null && newRating >= 1 && newRating <= 10)
+        {
+            if (movie.Rate.HasValue)
+            {
+                movie.Rate = (float)(movie.Rate.Value * 0.5 + newRating * 0.5);
+            }
+            else
+            {
+                movie.Rate = (float)newRating;
+            }
+
+            await Context.SaveChangesAsync();
+            StateHasChanged();
+        }
+    }
+}

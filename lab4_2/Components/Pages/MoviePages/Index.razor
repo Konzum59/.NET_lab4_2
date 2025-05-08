@@ -1,0 +1,99 @@
+﻿@page "/movies"
+
+@rendermode InteractiveServer
+
+@using lab4_2.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<h3>Movies</h3>
+
+<p>
+    <a href="/movies/create" class="btn btn-primary">Create New</a>
+</p>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th @onclick='() => SortTable("Title")' style="cursor:pointer;">
+                Title @if (currentSortColumn == "Title")
+                {
+                    <span>(@(sortAscending ? "▲" : "▼"))</span>
+                }
+            </th>
+            <th @onclick='() => SortTable("ReleaseDate")' style="cursor:pointer;">
+                Release Date @if (currentSortColumn == "ReleaseDate")
+                {
+                    <span>(@(sortAscending ? "▲" : "▼"))</span>
+                }
+            </th>
+            <th @onclick='() => SortTable("Rate")' style="cursor:pointer;">
+                Rate @if (currentSortColumn == "Rate")
+                {
+                    <span>(@(sortAscending ? "▲" : "▼"))</span>
+                }
+            </th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var item in sortedMovies)
+        {
+            <tr>
+                <td>@item.Title</td>
+                <td>@item.ReleaseDate?.ToShortDateString()</td>
+                <td>@item.Rate</td>
+                <td>
+                    <a href="/movies/details/@item.Id" class="btn btn-info btn-sm">Details</a>
+                    <a href="/movies/edit/@item.Id" class="btn btn-warning btn-sm">Edit</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    private List<Movie> movies = new();
+    private List<Movie> sortedMovies = new();
+    private string currentSortColumn = "Title";
+    private bool sortAscending = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        movies = await Context.Movie.ToListAsync();
+        SortTable(currentSortColumn);
+    }
+
+    private void SortTable(string columnName)
+    {
+        if (currentSortColumn == columnName)
+        {
+            sortAscending = !sortAscending;
+        }
+        else
+        {
+            currentSortColumn = columnName;
+            sortAscending = true;
+        }
+
+        sortedMovies = columnName switch
+        {
+            "Title" => sortAscending
+                ? movies.OrderBy(m => m.Title).ToList()
+                : movies.OrderByDescending(m => m.Title).ToList(),
+            "ReleaseDate" => sortAscending
+                ? movies.OrderBy(m => m.ReleaseDate).ToList()
+                : movies.OrderByDescending(m => m.ReleaseDate).ToList(),
+            "Rate" => sortAscending
+                ? movies.OrderBy(m => m.Rate).ToList()
+                : movies.OrderByDescending(m => m.Rate).ToList(),
+            _ => movies
+        };
+
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,74 @@
+﻿@page "/movies/edit/{id:int}"
+@attribute [Authorize]
+@rendermode InteractiveServer
+
+@using lab4_2.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext Context
+@inject NavigationManager NavigationManager
+
+<h3>Edit Movie</h3>
+
+@if (movie != null)
+{
+    <EditForm Model="@movie" OnValidSubmit="@HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="form-group">
+            <label for="title">Title</label>
+            <InputText id="title" @bind-Value="movie.Title" class="form-control" />
+            <ValidationMessage For="@(() => movie.Title)" />
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <InputTextArea id="description" @bind-Value="movie.Description" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="releaseDate">Release Date</label>
+            <InputDate id="releaseDate" @bind-Value="movie.ReleaseDate" class="form-control" />
+        </div>
+
+        <div class="form-group">
+            <label for="imageUrl">Image URL</label>
+            <InputText id="imageUrl" @bind-Value="movie.ImageUrl" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label for="youtubeTrailerId">YouTube Trailer ID</label>
+            <InputText id="youtubeTrailerId" @bind-Value="movie.YouTubeTrailerId" class="form-control" />
+            <small class="text-muted">Only the ID (e.g. "dQw4w9WgXcQ" from https://www.youtube.com/watch?v=dQw4w9WgXcQ)</small>
+        </div>
+        <div class="form-group">
+            <label for="rate">Rating</label>
+            <InputNumber id="rate" @bind-Value="movie.Rate" class="form-control" />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Save</button>
+        <a href="/movies" class="btn btn-secondary">Cancel</a>
+    </EditForm>
+}
+else
+{
+    <p>Loading...</p>
+}
+
+@code {
+    [Parameter]
+    public int Id { get; set; }
+
+    private Movie? movie;
+
+    protected override async Task OnInitializedAsync()
+    {
+        movie = await Context.Movie.FirstOrDefaultAsync(m => m.Id == Id);
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await Context.SaveChangesAsync();
+        NavigationManager.NavigateTo("/movies");
+    }
+}
